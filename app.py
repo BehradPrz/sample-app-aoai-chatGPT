@@ -48,10 +48,9 @@ def create_app():
     app = Quart(__name__)
     app.register_blueprint(bp)
     app.config["TEMPLATES_AUTO_RELOAD"] = True
-    app.config['APPINSIGHTS_INSTRUMENTATIONKEY'] = '51856f2a-28a0-4935-be43-00ee83a1338e'  # Add this line
 
     # -------------------------------------------------------
-    appinsights = AppInsights(app)  # Initialize AppInsights 
+    app.config['APPINSIGHTS_INSTRUMENTATIONKEY'] = '51856f2a-28a0-4935-be43-00ee83a1338e'  # Add this line
     telemetry_client = TelemetryClient(app.config['APPINSIGHTS_INSTRUMENTATIONKEY']) # Initialize TelemetryClient
     # -------------------------------------------------------
     
