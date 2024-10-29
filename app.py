@@ -35,7 +35,9 @@ from backend.utils import (
     convert_to_pf_format,
     format_pf_non_streaming_response,
 )
-from applicationinsights.flask.ext import AppInsights  # Add this import
+# -----------------------------------
+from applicationinsights import TelemetryClient  # Add this import
+# -----------------------------------
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
 
@@ -47,7 +49,11 @@ def create_app():
     app.register_blueprint(bp)
     app.config["TEMPLATES_AUTO_RELOAD"] = True
     app.config['APPINSIGHTS_INSTRUMENTATIONKEY'] = '51856f2a-28a0-4935-be43-00ee83a1338e'  # Add this line
-    appinsights = AppInsights(app)  # Initialize AppInsights
+
+    # -------------------------------------------------------
+    appinsights = AppInsights(app)  # Initialize AppInsights 
+    telemetry_client = TelemetryClient(app.config['APPINSIGHTS_INSTRUMENTATIONKEY']) # Initialize TelemetryClient
+    # -------------------------------------------------------
     
     @app.before_serving
     async def init():
@@ -58,6 +64,22 @@ def create_app():
             logging.exception("Failed to initialize CosmosDB client")
             app.cosmos_conversation_client = None
             raise e
+
+    # -------------------------------------------------
+    @app.after_request
+    async def after_request(response):
+        # Track request telemetry
+        telemetry_client.track_request(
+            name=request.endpoint,
+            url=request.url,
+            success=response.status_code < 400,
+            result_code=response.status_code,
+            duration=0,  # You can calculate the actual duration if needed
+            http_method=request.method
+        )
+        telemetry_client.flush()
+        return response
+    # ---------------------------------------------------
     
     return app
 
