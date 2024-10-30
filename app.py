@@ -61,11 +61,11 @@ def create_app():
 
     # -------------------------------------------------------
     # Application Insights Setup
-    app.config['APPINSIGHTS_CONNECTION_STRING'] = "InstrumentationKey=<InstrumentationKey=51856f2a-28a0-4935-be43-00ee83a1338e;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=18a52437-1b41-4262-a727-38fc44f79926"  # Set your actual connection string
+    app.config['APPLICATIONINSIGHTS_CONNECTION_STRING'] = "InstrumentationKey=<InstrumentationKey=51856f2a-28a0-4935-be43-00ee83a1338e;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=18a52437-1b41-4262-a727-38fc44f79926"  # Set your actual connection string
     middleware = FlaskMiddleware(
         app,
         exporter=AzureExporter(
-            connection_string=app.config['APPINSIGHTS_CONNECTION_STRING']
+            connection_string=app.config['APPLICATIONINSIGHTS_CONNECTION_STRING']
         ),
         sampler=ProbabilitySampler(rate=1.0)  # Adjust the sampling rate as needed
     )
