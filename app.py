@@ -36,7 +36,17 @@ from backend.utils import (
     format_pf_non_streaming_response,
 )
 # -----------------------------------
-from applicationinsights import TelemetryClient  # Add this import
+# Import necessary libraries for Application Insights
+import logging
+from opencensus.ext.azure.log_exporter import AzureLogHandler
+from opencensus.ext.azure.trace_exporter import AzureExporter
+from opencensus.ext.flask.flask_middleware import FlaskMiddleware
+from opencensus.trace.samplers import ProbabilitySampler
+
+# Set up logging with Application Insights using Connection String
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+logger.addHandler(AzureLogHandler(connection_string="InstrumentationKey=51856f2a-28a0-4935-be43-00ee83a1338e;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=18a52437-1b41-4262-a727-38fc44f79926"))
 # -----------------------------------
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
@@ -50,8 +60,15 @@ def create_app():
     app.config["TEMPLATES_AUTO_RELOAD"] = True
 
     # -------------------------------------------------------
-    app.config['APPINSIGHTS_INSTRUMENTATIONKEY'] = '51856f2a-28a0-4935-be43-00ee83a1338e'  # Add this line
-    telemetry_client = TelemetryClient(app.config['APPINSIGHTS_INSTRUMENTATIONKEY']) # Initialize TelemetryClient
+    # Application Insights Setup
+    app.config['APPINSIGHTS_CONNECTION_STRING'] = "InstrumentationKey=<InstrumentationKey=51856f2a-28a0-4935-be43-00ee83a1338e;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=18a52437-1b41-4262-a727-38fc44f79926"  # Set your actual connection string
+    middleware = FlaskMiddleware(
+        app,
+        exporter=AzureExporter(
+            connection_string=app.config['APPINSIGHTS_CONNECTION_STRING']
+        ),
+        sampler=ProbabilitySampler(rate=1.0)  # Adjust the sampling rate as needed
+    )
     # -------------------------------------------------------
     
     @app.before_serving
@@ -67,21 +84,25 @@ def create_app():
     # -------------------------------------------------
     @app.after_request
     async def after_request(response):
-        # Track request telemetry
-        telemetry_client.track_request(
-            name=request.endpoint,
-            url=request.url,
-            success=response.status_code < 400,
-            result_code=response.status_code,
-            duration=0,  # You can calculate the actual duration if needed
-            http_method=request.method
-        )
-        telemetry_client.flush()
+        # Track the request with custom telemetry
+        middleware.exporter.export({
+            "name": request.endpoint,
+            "url": request.url,
+            "result_code": response.status_code,
+            "success": response.status_code < 400,
+            "http_method": request.method
+        })
         return response
     # ---------------------------------------------------
     
     return app
 
+# Global error Handler ---------------------------------------
+@app.errorhandler(Exception)
+async def handle_exception(e):
+    logger.exception("An error occurred")  # This logs the exception details to Application Insights
+    return jsonify({"error": str(e)}), 500
+#------------------------------------------------------------------
 
 @bp.route("/")
 async def index():
