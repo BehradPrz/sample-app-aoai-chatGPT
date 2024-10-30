@@ -46,7 +46,9 @@ from opentelemetry import trace
 
 # Configure OpenTelemetry to use Azure Monitor with the 
 # APPLICATIONINSIGHTS_CONNECTION_STRING environment variable.
-configure_azure_monitor()
+configure_azure_monitor(
+    connection_string="InstrumentationKey=51856f2a-28a0-4935-be43-00ee83a1338e;IngestionEndpoint=https://eastus-8.in.applicationinsights.azure.com/;LiveEndpoint=https://eastus.livediagnostics.monitor.azure.com/;ApplicationId=18a52437-1b41-4262-a727-38fc44f79926"
+)
 # -----------------------------------------------
 
 bp = Blueprint("routes", __name__, static_folder="static", template_folder="static")
